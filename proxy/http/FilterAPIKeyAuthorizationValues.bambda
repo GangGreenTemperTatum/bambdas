@@ -1,0 +1,52 @@
+// the intention of this bambda is to identify when an Authorization: header is present, not empty and does not include a traditional bearer token which could highlight endpoints which accept authorization other than bearer tokens which could result in excessive BFLA-related vulns
+
+var configNoFilter = true;
+var configNotInScopeOnly = true;
+var sessionCookieName = "";
+var sessionCookieValue = "";
+
+if (!requestResponse.hasResponse()) {
+    return false;
+}
+
+var request = requestResponse.request();
+var response = requestResponse.response();
+
+if (!response.isStatusCodeClass(StatusCodeClass.CLASS_2XX_SUCCESS)) {
+    return false;
+}
+
+// var excludedCharactersRegex = "[!@#$%^&*()-=_+\\[\\]{};':\",.<>/?\\\\|]"; // Add characters you want to exclude inside the square brackets
+
+var authHeader = request.hasHeader("Authorization");
+var bearerToken = authHeader &&
+                  request.headerValue("Authorization").toLowerCase().startsWith("bearer:") &&
+                  request.headerValue("Authorization").substring("Bearer:".length()).trim().matches("[a-zA-Z0-9]{41}"); // Modify the value of 41 depending on the API key count per-provider
+
+var sessionCookie = request.headerValue("Cookie") != null &&
+                   !sessionCookieName.isEmpty() &&
+                   request.hasParameter(sessionCookieName, HttpParameterType.COOKIE) &&
+                   (sessionCookieValue.isEmpty() || sessionCookieValue.equals(request.parameter(sessionCookieName, HttpParameterType.COOKIE).value()));
+
+var path = request.pathWithoutQuery().toLowerCase();
+var mimeType = requestResponse.mimeType();
+var filterDenyList = mimeType != MimeType.CSS &&
+                     mimeType != MimeType.IMAGE_UNKNOWN &&
+                     mimeType != MimeType.IMAGE_JPEG &&
+                     mimeType != MimeType.IMAGE_GIF &&
+                     mimeType != MimeType.IMAGE_PNG &&
+                     mimeType != MimeType.IMAGE_BMP &&
+                     mimeType != MimeType.IMAGE_TIFF &&
+                     mimeType != MimeType.UNRECOGNIZED &&
+                     mimeType != MimeType.SOUND &&
+                     mimeType != MimeType.VIDEO &&
+                     mimeType != MimeType.FONT_WOFF &&
+                     mimeType != MimeType.FONT_WOFF2 &&
+                     mimeType != MimeType.APPLICATION_UNKNOWN &&
+                     !path.endsWith(".js") &&
+                     !path.endsWith(".gif") &&
+                     !path.endsWith(".jpg") &&
+                     !path.endsWith(".png") &&
+                     !path.endsWith(".css");
+
+return (authHeader && !bearerToken || sessionCookie) && (configNoFilter || filterDenyList) && (configNotInScopeOnly || request.isInScope());
