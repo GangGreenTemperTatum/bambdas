@@ -1,4 +1,8 @@
-// the intention of this bambda is to identify when an Authorization: header is present, not empty and does not include a traditional bearer token which could highlight endpoints which accept authorization other than bearer tokens which could result in excessive BFLA-related vulns
+// the intention of this bambda is to identify when an Authorization: header is present, not empty,
+// and does not include a traditional bearer token which could highlight endpoints that accept
+// authorization other than bearer tokens, potentially resulting in BFLA-related vulnerabilities
+
+// to update this to your target, amend the numeric value of 41 to the API key number count specific to the provider
 
 var configNoFilter = true;
 var configNotInScopeOnly = true;
@@ -16,12 +20,16 @@ if (!response.isStatusCodeClass(StatusCodeClass.CLASS_2XX_SUCCESS)) {
     return false;
 }
 
-// var excludedCharactersRegex = "[!@#$%^&*()-=_+\\[\\]{};':\",.<>/?\\\\|]"; // Add characters you want to exclude inside the square brackets
-
 var authHeader = request.hasHeader("Authorization");
+
 var bearerToken = authHeader &&
-                  request.headerValue("Authorization").toLowerCase().startsWith("bearer:") &&
-                  request.headerValue("Authorization").substring("Bearer:".length()).trim().matches("[a-zA-Z0-9]{41}"); // Modify the value of 41 depending on the API key count per-provider
+                  request.headerValue("Authorization")
+                         .toLowerCase()
+                         .startsWith("bearer ") &&
+                  request.headerValue("Authorization")
+                         .substring("Bearer ".length())
+                         .trim()
+                         .matches("[a-zA-Z0-9]{1,41}"); // Adjust the range as needed
 
 var sessionCookie = request.headerValue("Cookie") != null &&
                    !sessionCookieName.isEmpty() &&
@@ -49,4 +57,4 @@ var filterDenyList = mimeType != MimeType.CSS &&
                      !path.endsWith(".png") &&
                      !path.endsWith(".css");
 
-return (authHeader && !bearerToken || sessionCookie) && (configNoFilter || filterDenyList) && (configNotInScopeOnly || request.isInScope());
+return (authHeader && !bearerToken) && (configNoFilter || filterDenyList) && (configNotInScopeOnly || request.isInScope());
