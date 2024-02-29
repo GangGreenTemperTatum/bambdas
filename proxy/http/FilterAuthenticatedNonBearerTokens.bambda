@@ -1,9 +1,13 @@
-// the intention of this bambda is to identify when an Authorization: header is present, not empty and does not include a traditional bearer token (beginning with "ey") using regex which could highlight endpoints which accept authorization other than bearer tokens which could result in excessive BFLA-related vulns
+/**
+ * Filter when an Authorization header is present, not empty and does not include a traditional bearer token (beginning with "ey")
+ *
+ * @author GangGreenTemperTatum (https://github.com/GangGreenTemperTatum)
+ **/
 
 var configNoFilter = true;
-var configNotInScopeOnly = true;
-var sessionCookieName = "";
-var sessionCookieValue = "";
+var configInScopeOnly = true; // If set to false, won't show out-of-scope items
+var sessionCookieName = ""; // If given, will look for a cookie with that name.
+var sessionCookieValue = ""; // If given, will check if cookie with sessionCookieName has this value.
 
 if (!requestResponse.hasResponse()) {
     return false;
